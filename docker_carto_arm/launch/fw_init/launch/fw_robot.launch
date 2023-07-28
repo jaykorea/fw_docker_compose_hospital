@@ -1,0 +1,103 @@
+<launch>
+
+  <arg name="initial_reset" default="false"/>
+  <arg name="serial_flag" default="true"/>
+  <arg name="smooth_flag" default="true"/>
+  <arg name="mux_flag" default="true"/>
+  <arg name="joy_flag" default="true"/>
+  <arg name="ttc_flag" default="false"/>
+  <arg name="safety_flag" default="false"/>
+  <arg name="semi_flag" default="true"/>
+  <arg name="mainjoy_flag" default="true"/>
+
+  <group if="$(arg mainjoy_flag)">
+    <rosparam file="$(find fw_main_joy)/config/fw_main_joy_params.yaml" command="load"/>
+    <node name="fw_main_joy_node" pkg="fw_main_joy" type="fw_main_joy_node" output="screen" respawn="true"/>
+  </group>
+ 
+	<include file="$(find md)/launch/md.launch">
+	</include>
+	<!-- <include file="$(find fw_ahrs)/launch/fw_imu.launch">
+	</include> -->
+	<!-- <include file="$(find rplidar_ros)/launch/fw_rp_s2.launch">
+	</include> -->
+  <include file="$(find lakibeam1)/launch/fw_richbeam.launch">
+  </include>
+  <!-- <include file="$(find fitxxx)/launch/akusense_lidar.launch">
+  </include> -->
+	<!-- <include file="$(find ydlidar)/launch/fw_yd.launch">
+	</include> -->
+	<!-- <include file="$(find rplidar_ros)/launch/fw_rp_a1.launch">
+	</include> -->
+	<include file="$(find ira_laser_tools)/launch/laserscan_multi_merger.launch">
+	</include>
+	<!--include file="$(find realsense2_camera)/launch/rs_camera.launch"-->
+	<!--/include-->
+
+	<include if="$(arg smooth_flag)" file="$(find yocs_velocity_smoother)/launch/standalone_nav.launch">
+  	</include>
+  	<!-- <include if="$(arg smooth_flag)" file="$(find yocs_velocity_smoother)/launch/standalone_joy.launch">
+  	</include> -->
+    <!-- <include if="$(arg smooth_flag)" file="$(find yocs_velocity_smoother)/launch/standalone_mainjoy.launch">
+  	</include> -->
+    <include if="$(arg smooth_flag)" file="$(find yocs_velocity_smoother)/launch/standalone_semi_auto.launch">
+  	</include>
+  	<include if="$(arg smooth_flag)" file="$(find yocs_velocity_smoother)/launch/standalone_teleop.launch">
+  	</include>
+  	<include if="$(arg smooth_flag)" file="$(find yocs_velocity_smoother)/launch/standalone_emer.launch">
+  	</include>
+  	<include if="$(arg smooth_flag)" file="$(find yocs_velocity_smoother)/launch/standalone_super_emer.launch">
+  	</include>
+	
+  	<include if="$(arg mux_flag)" file="$(find yocs_cmd_vel_mux)/launch/standalone.launch"/>
+
+    <group if="$(arg ttc_flag)">
+      <rosparam file="$(find fw_ttc)/config/fw_ttc_params.yaml" command="load"/>
+      <node name="fw_ttc_node" pkg="fw_ttc" type="fw_ttc_node" output="screen" respawn="false"/>
+    </group>
+
+    <group if="$(arg safety_flag)">
+      <rosparam file="$(find fw_safety)/config/fw_safety_params.yaml" command="load"/>
+      <node name="fw_safety_node" pkg="fw_safety" type="fw_safety_node" output="screen" respawn="false"/>
+    </group>
+
+	<node if="$(arg serial_flag)" pkg="rosserial_python" type="serial_node.py" name="serial_node" output="screen" respawn="true">
+      <param name="port"	value="/dev/STMJOY" />
+      <param name="baud"	value="57600" />
+    </node>
+
+	<node if="$(arg joy_flag)" pkg="freeway_joy" type="freeway_joy_node" name="freeway_joy_node" output="screen" respawn="false"/>
+
+	<include file="$(find fw_rev_04_init)/launch/fw_remote.launch">
+	</include>
+
+	<include if="$(arg semi_flag)" file="$(find safe_teleop_base)/launch/safe_teleop.launch">
+	</include>
+
+    <!-- <include file="$(find realsense2_camera)/launch/d400.launch">
+      <arg name="camera" value="d455_L"/>
+      <arg name="serial_no_camera" value="234222303686"/>
+      <arg name="initial_reset" value="$(arg initial_reset)"/>
+      <arg name="align_depth" value="true"/>
+      <arg name="enable_sync" value="true"/>
+      <arg name="clip_distance" value="8"/>
+      <arg name="linear_accel_cov" value="1.0"/>
+      <arg name="unite_imu_method" value="linear_interpolation"/>
+      <arg name="gyro_fps"      value="-1"/>
+      <arg name="accel_fps"     value="-1"/>
+      <arg name="enable_gyro"   value="true"/>
+      <arg name="enable_accel"  value="true"/>
+      <arg name="publish_tf"    value="false"/>
+      <arg name="enable_infra"  value="false"/>
+      <arg name="color_width"   value="424"/>
+      <arg name="color_height"  value="240"/>
+      <arg name="depth_width"   value="424"/>
+      <arg name="depth_height"  value="240"/>
+
+      <arg name="enable_infra1" value="true"/>
+      <arg name="enable_infra2" value="true"/>
+      
+      <arg name="filters" value="disparity,spatial,temporal,decimation"/>
+    </include> -->
+
+</launch>

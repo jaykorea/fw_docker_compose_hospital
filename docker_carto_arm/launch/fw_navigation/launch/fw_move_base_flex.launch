@@ -1,0 +1,100 @@
+<launch>
+  <!-- Arguments -->
+  <arg name="move_base_flag" default="true"/> <!-- -->
+  <arg name="cmd_vel_topic" default="/cmd_vel/nav" /> <!-- cmd_vel -->
+  <arg name="odom_topic" default="/odom_md" /> <!-- /odometry/filtered -->
+  <arg name="dt_flag" default="true"/>
+  <arg name="ttc_flag" default="false"/>
+  <arg name="safety_flag" default="true"/>
+  <arg name="joy_flag" default="false"/>
+  <arg name="spk_flag" default="false"/>
+  <arg name="serial_flag" default="false"/>
+  <arg name="smooth_flag" default="false"/>
+  <arg name="mux_flag" default="false"/>
+  <arg name="repub_flag"  default="false"/>
+  <arg name="rf2o_flag" default="false"/>
+  <arg name="imu_flag"  default="false"/>
+  
+  <!-- move_base -->
+  <node if="$(arg move_base_flag)" name="move_base_flex" pkg="mbf_costmap_nav" type="mbf_costmap_nav" required="true" output="screen">
+    <!-- <param name="base_local_planner" value="teb_local_planner/TebLocalPlannerROS" />
+    <param name="base_global_planner" value="global_planner/GlobalPlanner" /> -->
+    <!-- <param name="base_global_planner" value="global_planner/RRTGlobalPlanner"/> -->
+    <!-- <param name="base_global_planner" value="navfn/NavfnROS"/> -->
+    <!-- <param name="base_global_planner" value="rrt_star_global_planner/RRTStarPlanner"/> -->
+    <!-- <param name="base_global_planner" value="lattice_planner/TBPlanner"/> -->
+
+    <rosparam file="$(find fw_rev_04_navigation)/param/costmap_common_params_fw.yaml" command="load" ns="global_costmap" />
+    <rosparam file="$(find fw_rev_04_navigation)/param/costmap_common_params_fw.yaml" command="load" ns="local_costmap" />
+    <rosparam file="$(find fw_rev_04_navigation)/param/local_costmap_params.yaml" command="load" />
+    <rosparam file="$(find fw_rev_04_navigation)/param/global_costmap_params.yaml" command="load" />
+    <rosparam file="$(find fw_rev_04_navigation)/param/default_planner.yaml" command="load" />
+    <rosparam file="$(find fw_rev_04_navigation)/param/recovery_behaviors.yaml" command="load" />
+    <!-- <rosparam file="$(find fw_rev_04_navigation)/param/teb_local_planner_params_fw.yaml" command="load" /> -->
+    <!-- <rosparam file="$(find fw_rev_04_navigation)/param/global_planner_params.yaml" command="load" /> -->
+    <rosparam file="$(find fw_rev_04_navigation)/param/planners.yaml" command="load" />
+    <rosparam file="$(find fw_rev_04_navigation)/param/controllers.yaml" command="load" />
+    <rosparam file="$(find fw_rev_04_navigation)/param/mbf_costmap_nav.yaml" command="load" />
+    <!-- <rosparam file="$(find fw_rev_04_navigation)/param/global_planner_params_lattice.yaml" command="load" /> -->
+    <!-- <rosparam file="$(find fw_rev_04_navigation)/param/rrt_star_params.yaml" command="load" /> -->
+    <!-- <rosparam file="$(find fw_rev_04_navigation)/param/rrt_global_planner.yaml" command="load" /> -->
+    <remap from="cmd_vel" to="$(arg cmd_vel_topic)"/>
+    <remap from="odom" to="$(arg odom_topic)"/>
+  </node>
+
+  <node if="$(arg move_base_flag)" name="move_base_legacy_relay" pkg="mbf_costmap_nav" type="move_base_legacy_relay.py">
+      <!-- <rosparam file="$(find fw_rev_04_navigation)/param/move_base_flex_params.yaml" command="load" /> -->
+      <rosparam file="$(find fw_rev_04_navigation)/param/mbf_costmap_nav.yaml" command="load" />
+      <rosparam file="$(find fw_rev_04_navigation)/param/default_planner.yaml" command="load" />
+  </node>
+
+  <node if="$(arg imu_flag)" pkg="fw_imu" type="fw_imu_node" name="imu_covariance_adjuster" output="screen" respawn="false"/>
+
+  <node if="$(arg dt_flag)" pkg="distancetime_calculator" type="distancetime_calculator_flex_node" name="distancetime_calculator_flex_node"  output="screen" respawn="false"/>
+  <node if="$(arg joy_flag)" pkg="freeway_joy" type="freeway_joy_node" name="freeway_joy_node" output="screen" respawn="false"/>
+  <node if="$(arg serial_flag)" pkg="rosserial_python" type="serial_node.py" name="serial_node" output="screen">
+    <param name="port"	value="/dev/STMJOY" />
+    <param name="baud"	value="57600" />
+  </node>
+
+  <node if="$(arg repub_flag)" pkg="rplidar_ros" type="rplidarNode_filter_repub" name="rplidarNode_filter_repub" output="screen" respawn="false"/>
+
+  <group if="$(arg ttc_flag)">
+    <rosparam file="$(find fw_ttc)/config/fw_ttc_params.yaml" command="load"/>
+    <node name="fw_ttc_node" pkg="fw_ttc" type="fw_ttc_node" output="screen" respawn="false"/>
+  </group>
+
+  <group if="$(arg safety_flag)">
+    <rosparam file="$(find fw_safety)/config/fw_safety_params.yaml" command="load"/>
+    <node name="fw_safety_node" pkg="fw_safety" type="fw_safety_node" output="screen" respawn="false"/>
+  </group>
+
+  <group if="$(arg rf2o_flag)">
+    <node pkg="rf2o_laser_odometry" type="rf2o_laser_odometry_node" name="rf2o_laser_odometry" output="screen">
+    <param name="laser_scan_topic" value="/scan_rp_filtered_repub"/>            <!--topic where the lidar scans are being published-->
+    <param name="odom_topic" value="/odom_laser" />                       <!--topic where tu publish the odometry estimations-->
+    <param name="publish_tf" value="false" />                             <!--wheter or not to publish the tf::transform (base->odom)-->
+    <param name="base_frame_id" value="base_footprint"/>                 <!--frame_id (tf) of the mobile robot base. A tf transform from the laser_frame to the base_f$--> 
+    <param name="odom_frame_id" value="odom_combined" />              <!--frame_id (tf) to publish the odometry estimations-->
+    <param name="init_pose_from_topic" value="/odometry/filtered" />          <!--(Odom topic) Leave empty to start at point (0,0)-->
+    <param name="freq" value="5.0"/>                                      <!--Execution frequency.-->
+    <param name="verbose" value="true" />                                 <!--verbose--> 
+  </node>
+  </group>
+  
+  <node if="$(arg spk_flag)" pkg="freeway_spk" type="fw_spk_flex.py" name="fw_spk_node" output="screen" respawn="false"/>
+    <node if="$(arg spk_flag)" pkg="freeway_spk" type="fw_spk_flex.py" name="fw_spk_node" output="screen" respawn="false"/>
+  
+  <include if="$(arg smooth_flag)" file="$(find yocs_velocity_smoother)/launch/standalone_nav.launch">
+  </include>
+  <include if="$(arg smooth_flag)" file="$(find yocs_velocity_smoother)/launch/standalone_joy.launch">
+  </include>
+  <include if="$(arg smooth_flag)" file="$(find yocs_velocity_smoother)/launch/standalone_teleop.launch">
+  </include>
+  <include if="$(arg smooth_flag)" file="$(find yocs_velocity_smoother)/launch/standalone_emer.launch">
+  </include>
+  <include if="$(arg smooth_flag)" file="$(find yocs_velocity_smoother)/launch/standalone_super_emer.launch">
+  </include>
+
+  <include if="$(arg mux_flag)" file="$(find yocs_cmd_vel_mux)/launch/standalone.launch"/>
+</launch>

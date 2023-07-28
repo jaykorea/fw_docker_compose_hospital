@@ -1,0 +1,9 @@
+fw_main_joy_node:
+  device_name: "/dev/MAINJOY"
+  x_scale: 1.2
+  y_scale: 1.57
+  frequency: 20.0
+  baudrate: 38400
+  cmd_vel_topic: "/cmd_vel/mainjoy"
+  uart_debugmode: false
+  front_obstacle_topid: "/freeway/front_obstacle_teb"

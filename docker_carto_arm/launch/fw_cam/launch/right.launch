@@ -1,0 +1,28 @@
+
+<launch>
+  <arg name="initial_reset" default="false"/>
+
+    <include file="$(find realsense2_camera)/launch/d400.launch">
+      <arg name="camera" value="d455_R"/>
+      <arg name="serial_no_camera" value="133522250344"/>
+      <arg name="initial_reset" value="$(arg initial_reset)"/>
+      <arg name="align_depth" value="true"/>
+      <arg name="enable_sync" value="true"/>
+      <arg name="clip_distance" value="4"/>
+      <arg name="linear_accel_cov" value="1.0"/>
+      <arg name="unite_imu_method" value="linear_interpolation"/>
+      <arg name="gyro_fps"      value="200"/>
+      <arg name="accel_fps"     value="62"/>
+      <arg name="enable_gyro"   value="true"/>
+      <arg name="enable_accel"  value="true"/>
+      <arg name="publish_tf"    value="false"/>
+      <arg name="enable_infra1" value="false"/>
+      <arg name="enable_infra2" value="false"/>
+      <arg name="color_width"   value="424"/>
+      <arg name="color_height"  value="240"/>
+      <arg name="depth_width"   value="424"/>
+      <arg name="depth_height"  value="240"/>
+    
+      <!-- <arg name="filters" value="disparity,spatial,temporal,decimation"/> -->
+    </include>
+</launch>
